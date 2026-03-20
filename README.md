@@ -4,7 +4,7 @@
 
 ---
 
-## 💡 Inspiration
+## Inspiration
 
 Every monsoon season in Chennai, thousands of delivery partners like **Raj** keep riding through flooded streets — not because they want to, but because missing a shift means missing rent.
 
@@ -18,13 +18,13 @@ That gap is what inspired **GigShield**: a micro-insurance system that is as dyn
 
 ---
 
-## ✨ What It Does
+##  What It Does
 
 GigShield delivers **contextual, weekly micro-insurance** for gig delivery workers — automatically priced, automatically triggered, and fraud-resistant by design.
 
-- 🔍 **Auto-identifies** eligible workers using behavioural and environmental signals — no forms, no manual onboarding
-- 📊 **Scores risk in real time** across three dimensions: Environmental, Operational, and Behavioural
-- 💰 **Calculates a personalised weekly premium** using the formula:
+-  **Auto-identifies** eligible workers using behavioural and environmental signals — no forms, no manual onboarding
+-  **Scores risk in real time** across three dimensions: Environmental, Operational, and Behavioural
+-  **Calculates a personalised weekly premium** using the formula:
 
 $$\text{Weekly Premium} = P_{\text{base}} \times R_{\text{multiplier}} \times B_{\text{modifier}} - D_{\text{trust}}$$
 
@@ -38,13 +38,13 @@ For our persona **Raj** (High risk, Consistent worker, High trust history):
 
 $$\text{Premium} = ₹150 \times 1.3 \times 0.9 - 20\% = ₹\textbf{140/week}$$
 
-- ⚡ **Triggers automatic payouts** when verified environmental events cross a threshold — in under 60 seconds
-- 🛡️ **Detects fraud** via multi-signal checks: IP deduplication, GPS consistency, session fingerprinting, timezone verification, and cell tower triangulation
-- 🔗 **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
+-  **Triggers automatic payouts** when verified environmental events cross a threshold — in under 60 seconds
+-  **Detects fraud** via multi-signal checks: IP deduplication, GPS consistency, session fingerprinting, timezone verification, and cell tower triangulation
+-  **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
 
 ---
 
-## 🏗️ How We Plan to Build It
+##  How We Plan to Build It
 
 GigShield is designed as three independently deployable microservices connected by a shared PostgreSQL database and Redis cache layer.
 
@@ -107,7 +107,7 @@ Since Swiggy's driver data is not publicly available, the demo will use a **synt
 
 ---
 
-## ⚡ Challenges We Anticipate
+## Challenges We Anticipate
 
 **Pricing that is fair AND solvent** — Calibrating multipliers so the product is affordable for low-income workers while keeping the premium pool solvent across worst-case weather clusters is a genuine actuarial problem, not just a product design one.
 
@@ -119,7 +119,7 @@ Since Swiggy's driver data is not publicly available, the demo will use a **synt
 
 ---
 
-## 🏆 Accomplishments We're Proud Of
+## Accomplishments We're Proud Of
 
 - **The pricing formula is actuarially validated** — Monte Carlo solvency testing across 10,000 weather weeks, not just a formula on paper
 - **Fraud detection is proportionate** — Tier 1 checks are invisible to legitimate workers and only surface on anomalous behaviour
@@ -128,7 +128,7 @@ Since Swiggy's driver data is not publicly available, the demo will use a **synt
 
 ---
 
-## 📚 What We Learned
+## What We Learned
 
 - **Micro-insurance is a systems problem, not just a product problem.** Pricing, fraud, UX, and claims are deeply interdependent — getting one wrong breaks the others.
 - **Guidewire's platform is more composable than it looks.** The same API primitives designed for ₹1L annual premiums can model a ₹140/week micro-policy.
@@ -137,7 +137,7 @@ Since Swiggy's driver data is not publicly available, the demo will use a **synt
 
 ---
 
-## 🔮 What's Next for GigShield
+## What's Next for GigShield
 
 - Replace rule-based scoring with a trained **XGBoost classifier** on real incident data
 - IRDAI micro-insurance sandbox pilot — 100 real delivery partners in Chennai
