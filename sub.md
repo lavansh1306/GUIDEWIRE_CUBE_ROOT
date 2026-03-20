@@ -1,4 +1,5 @@
 Persona
+
 Name: Raj
 Age: 25
 Platform: Swiggy
@@ -14,6 +15,8 @@ Risk context: Unstable income, potential for system abuse, no existing safety ne
 Our insurance targets consistent workers like Raj — those who show up daily
 and deserve protection when the environment fails them, not when they do.
 
+---
+
 Workflow
 
 1. Worker Identification
@@ -27,6 +30,8 @@ and delivery density).
 
 Eligibility is determined by the Risk Score engine before a policy
 is issued.
+
+---
 
 2. Risk Score
 
@@ -54,6 +59,8 @@ d. Route consistency
 
 Score maps to tiers:
 Low / Medium / High / Extreme
+
+---
 
 3. Weekly Pricing Model
 
@@ -93,9 +100,16 @@ Premium range: ₹90 (floor) to ₹360 (ceiling)
 Validated via Monte Carlo simulation across 10,000 synthetic
 Chennai weather weeks to confirm pool solvency.
 
+---
+
 4. Parametric Automation Flow
 
-The worker never files a claim. The entire process is automatic.
+Primary flow is fully automatic — the worker never needs to
+file a claim. A manual claim option exists for edge cases where
+the automatic trigger did not fire but the worker was genuinely
+affected (e.g. localised flooding not captured by OpenWeatherMap's
+zone average). Manual claims go through the same Tier 1 + Tier 2
+fraud checks before payout is approved.
 
 Step 1: OpenWeatherMap polls Chennai weather every 15 minutes
 Step 2: Rain intensity crosses threshold (>15mm/hr)
@@ -107,13 +121,17 @@ Step 3: Fraud checks run in parallel (Tier 1):
 Step 4: All checks pass
          → Guidewire PolicyCenter updates policy status to
            "payout triggered" via REST API
-         → Guidewire BillingCenter initiates payment instruction
+         → Guidewire ClaimCenter creates and closes the
+           claim record automatically
+         → Guidewire BillingCenter initiates payment
+           instruction to Stripe
 Step 5: Stripe releases payment to worker wallet
 Step 6: Supabase Realtime pushes notification to worker's browser:
          "Heavy rain detected → ₹140 credited to your account"
 
 Total time from trigger to payout: under 60 seconds
-No worker action. No form. No waiting.
+
+---
 
 5. Fraud Detection Mechanism
 
@@ -194,6 +212,8 @@ Physics challenge (optional, mobile web only):
    - Gyroscope + accelerometer liveness check
    - Not part of standard claim flow
 
+---
+
 6. UX Flow
 
 Platform: React Web Application
@@ -214,13 +234,15 @@ Worker View (Raj's Dashboard)
 |  Current conditions: Chennai     |
 |  Rain: 18mm/hr ⚠ Above threshold |
 |                                  |
-|  → Payout triggered              |
+|  → Payout triggered automatically|
 |  ₹140 credited to your account   |
+|                                  |
+|  [File Manual Claim]             |
 +----------------------------------+
 
-Raj never taps a button to file a claim.
-Raj never fills a form.
-Raj never calls anyone.
+Primary flow: automatic, no worker action needed.
+Manual claim option available for edge cases only.
+Manual claims go through identical fraud checks before approval.
 
 Admin View (Insurer Dashboard)
 
@@ -230,7 +252,9 @@ Admin View (Insurer Dashboard)
 - Payout history and loss ratio
 - Worker risk score breakdown
 
-  7. Tech Stack
+---
+
+7. Tech Stack
 
 Layer            Technology              Purpose
 ---------------------------------------------------------
@@ -249,9 +273,15 @@ Payments         Stripe (sandbox)        Weekly premium
                                          auto-deduction
 Real-time        Supabase Realtime       Live payout
                                          notifications
-Guidewire        InsuranceSuite APIs     PolicyCenter +
-                                         BillingCenter
-                                         integration
+Guidewire        InsuranceSuite APIs     PolicyCenter — policy
+                                         status updates on
+                                         payout trigger
+                                         ClaimCenter — auto
+                                         claim creation and
+                                         closure
+                                         BillingCenter —
+                                         payment instruction
+                                         to Stripe
 
 Entire demo stack cost: ₹0
 All services run on free/sandbox tiers.
