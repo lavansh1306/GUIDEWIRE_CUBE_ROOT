@@ -301,90 +301,53 @@ Fraud Scored (Random Forest + Isolation Forest + 6-signal checks)
 ---
 
 ### 1️⃣ The Differentiation
-*How our AI/ML architecture tells a genuinely stranded worker from a bad actor*
 
-A real worker stuck in a flood looks different from a spoofer in six independent ways simultaneously:
+A real worker in a flood and a spoofer at home look identical on GPS — but different on every other signal simultaneously:
 
 | Signal | Genuine Worker | Spoofer |
 |---|---|---|
-| IP geolocation (ipapi.co) | IP resolves to claimed zone | IP resolves to different city |
-| Browser GPS vs OpenWeatherMap | GPS matches active weather station data | GPS points to zone with clear skies or mismatched data |
-| WebRTC local IP | Consistent with session history | New or inconsistent local IP |
-| Session fingerprint | Active session today, normal duration | Dormant account suddenly active |
-| Timezone | Matches claimed location | Mismatch with browser timezone |
-| Network behaviour | Latency degradation consistent with bad weather | Clean latency — spoofing from a stable connection |
+| IP geolocation | Resolves to claimed zone | Resolves to different city |
+| GPS vs OpenWeatherMap | Matches active weather station | Zone shows clear skies |
+| WebRTC local IP | Consistent with session history | New or mismatched |
+| Session fingerprint | Active today, normal duration | Dormant account, sudden spike |
+| Timezone | Matches claimed location | Browser timezone mismatch |
+| Network behaviour | Degraded — consistent with bad weather | Clean — spoofing from home |
 
-The **Random Forest classifier** takes all six signals as inputs and outputs a single fraud probability score. A genuine worker naturally passes most signals without doing anything. A spoofer has to beat all six simultaneously — which is practically impossible without detection.
+The **Random Forest classifier** scores all six signals together. A genuine worker passes naturally. A spoofer has to beat all six at once.
 
 ---
 
 ### 2️⃣ The Data
-*What we analyse beyond GPS to detect a coordinated fraud ring*
 
-When 500 people coordinate via Telegram to spoof the same zone, GPS alone cannot catch them — they all point to the same valid rainy zone. What gives them away is everything else:
+GPS alone fails against coordinated rings — 500 people can all point to the same valid rainy zone. What exposes them:
 
-- **IP clustering** — their GPS coordinates cluster unnaturally tight but their IPs resolve to 20 different neighbourhoods across the city
-- **Claim timing** — 50+ claims arrive within a 30-minute window, statistically impossible for a genuine distributed disruption
-- **Session similarity** — accounts that are normally dormant all activate at the same time with identical session patterns
-- **Network behaviour** — spoofers sitting at home have clean latency; real workers in a flood zone show degraded network characteristics (latency drift, jitter, packet loss)
-- **Location fingerprint deviation** — claimed zone does not match any of the worker's established historical delivery zones stored in Supabase
-- **Local news API** — ground condition reports for the claimed zone are cross-checked to verify the disruption is real
+- **IP clustering** — GPS coordinates unnaturally tight, IPs resolve to 20 different neighbourhoods
+- **Claim timing** — 50+ claims in 30 minutes, statistically impossible for a genuine disruption
+- **Session similarity** — dormant accounts all activate simultaneously with identical patterns
+- **Network behaviour** — spoofers show clean latency; real workers show degradation (jitter, packet loss)
+- **Location fingerprint** — claimed zone has no match in worker's historical delivery zones
+- **Local news API** — ground conditions cross-checked against the claimed disruption
 
-The **Isolation Forest** model runs unsupervised across all active claims and flags the entire cluster as an anomaly when these signals appear together — even if no individual claim looks fraudulent in isolation.
+**Isolation Forest** runs unsupervised across all active claims and flags the entire cluster as anomalous — even if no single claim looks fraudulent in isolation.
 
 ---
 
 ### 3️⃣ The UX Balance
-*How we handle flagged claims without penalising honest workers*
 
-A genuine worker in a flood may have poor GPS signal, unstable network, and an IP that resolves inconsistently — the same signals a spoofer might trigger. Our system handles this through a grace tier:
+A genuine worker in bad weather may trigger the same signals as a spoofer — poor GPS, unstable network, inconsistent IP. We never punish them for it:
 
-**If Tier 1 flags a claim:**
-- Payout is not rejected — it is held for up to 2 hours
-- Worker sees: *"Your claim is being verified — you will be notified shortly"*
-- Tier 2 behavioural checks run automatically in the background
-- If Tier 2 clears the claim → payout proceeds, no worker action needed
+**Tier 1 flags a claim →**
+- Payout held up to 2 hours, not rejected
+- Worker sees: *"Your claim is being verified — you'll be notified shortly"*
+- Tier 2 runs automatically in the background
+- Tier 2 clears it → payout proceeds, zero worker action
 
-**If Tier 2 also flags the claim:**
-- Worker is shown a single passive check: browser is asked to confirm current GPS one more time
-- No forms, no calls, no manual uploads
-- If confirmed → payout proceeds
-- If still flagged → routed to manual review queue in admin dashboard
+**Tier 2 also flags →**
+- One passive recheck: browser confirms GPS once
+- No forms, no calls, no uploads
+- Still flagged → routed to manual review in admin dashboard
 
-**Key principle:**
-A network drop in bad weather degrades signals consistently across all six checks — the Random Forest model was trained on synthetic profiles that include genuine bad-weather network degradation patterns. A spoofer with a clean home connection produces a fundamentally different signal profile. The model distinguishes between the two without asking the worker to prove anything.
-
----
-
-## 🚀 Core Differentiators
-
-- 📊 **ML-driven dynamic pricing** — XGBoost + regression, not flat premiums
-- ⚡ **Zero-claim parametric payout** — under 60 seconds, no worker action
-- 🛡️ **6-signal ML fraud detection** — spoofers have to beat all 6 at once
-- 🔗 **Full Guidewire integration** — PolicyCenter, ClaimCenter, BillingCenter
-- 💰 **Built for low-income workers** — weekly pricing, ₹90 floor premium
-
----
-
-## 🏆 Accomplishments
-
-- Zero-action parametric payout flow — weather to Stripe credit in under 60 seconds
-- Four ML models designed to production standard with real features and training data
-- Fraud detection catches coordinated rings of 500+ spoofers, not just individuals
-- Pricing validated with 10,000 Monte Carlo simulations — pool stays solvent
-- Three Guidewire products wired into one flow at specific steps
-- Entire stack costs ₹0 to run
-
----
-
-## 🔮 What's Next
-
-- Retrain all ML models on real incident data post-pilot
-- IRDAI micro-insurance sandbox — 100 real delivery partners in Chennai
-- Live Swiggy / Zomato platform API integration
-- Expand to Tier 2 cities: Coimbatore, Madurai, Pune
-- Full fraud ring detection via social graph clustering
-- White-label as a Guidewire Marketplace component
+> A genuine network drop degrades all six signals consistently. A spoofer on a stable home connection produces a clean profile. The model was trained to know the difference — the worker never has to prove anything.
 
 ---
 
