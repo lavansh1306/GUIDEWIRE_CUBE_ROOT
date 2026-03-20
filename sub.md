@@ -314,8 +314,31 @@ Guidewire        InsuranceSuite APIs     PolicyCenter — policy
                                          BillingCenter —
                                          payment instruction
                                          to Stripe
-Entire demo stack cost: ₹0
-All services run on free/sandbox tiers.
+## 🧱 System Architecture
+```
+        ┌──────────────────────┐
+        │   React Frontend     │
+        │ (Worker + Admin UI)  │
+        └──────────┬───────────┘
+                   │
+                   ▼
+        ┌──────────────────────┐
+        │   FastAPI Backend    │
+        │----------------------│
+        │ XGBoost Risk Engine  │
+        │ Regression Pricing   │
+        │ RF + IF Fraud Layer  │
+        └──────────┬───────────┘
+                   │
+        ┌──────────▼───────────┐
+        │   Supabase (DB)      │
+        │ Workers / Claims     │
+        └──────────┬───────────┘
+                   │
+        ┌──────────▼───────────┐
+        │ External APIs        │
+        │ Weather / IP / Pay   │
+        │ Guidewire Suite      │
+        └──────────────────────┘
+```
 
-Entire demo stack cost: ₹0
-All services run on free/sandbox tiers.
