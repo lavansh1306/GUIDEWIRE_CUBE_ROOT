@@ -393,5 +393,5 @@ Built for Guidewire DEVTrails 2026 🚀
 
 ---
 
-🔗 **GitHub Repository:** _(link to be updated before submission deadline)_
-🎥 **Demo Video:** _(link to be updated before submission deadline)_
+🔗 **GitHub Repository:**(https://github.com/lavansh1306/GUIDEWIRE_CUBE_ROOT/blob/main/README.md)
+🎥 **Demo Video:** (https://drive.google.com/file/d/17o2szuY3qwua2nSs7H-Ve5xlCc6v3eZe/view?usp=drivesdk)
