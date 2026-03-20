@@ -25,7 +25,7 @@ For our persona **Raj** (High risk, Consistent worker, High trust):
 $$\text{Premium} = ₹150 \times 1.3 \times 0.9 - 20\% = ₹\textbf{140/week}$$
 
 - ⚡ **Parametric auto-payout** — when OpenWeatherMap detects rain above the threshold in Raj's zone, the system triggers the payout automatically with **zero action required from the worker.** No claim form. No phone call. No waiting.
-- 🛡️ **Detects fraud** via multi-signal checks: IP geolocation (ipapi.co), GPS consistency, session fingerprinting, timezone verification, and cell tower triangulation
+- 🛡️ **Detects fraud** via multi-signal checks: IP geolocation (ipapi.co), GPS consistency, session fingerprinting and timezone verification
 - 🔗 **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
 
 ## How we built it
@@ -49,7 +49,7 @@ We chose a **React web app** over a native mobile app for this hackathon build. 
 
 ### Parametric Automation Flow
 
-This is the core of GigShield — **the worker never has to file a claim.**
+This is the core of GigShield — **the worker never has to file a claim but CAN file a claim**
 
 ```
 1. OpenWeatherMap polls Chennai weather every 15 minutes
