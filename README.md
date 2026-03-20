@@ -125,7 +125,3 @@ Swiggy's driver data is not public — we use a **synthetic dataset of 500 Chenn
 - White-label the engine as a **Guidewire Marketplace component** for other insurers
 
 ---
-
-🔗 **GitHub Repository:** https://github.com/your-org/gigshield _(link to be updated before submission deadline)_
-
-🎥 **Demo Video:** https://youtu.be/your-demo-link _(link to be updated before submission deadline)_
