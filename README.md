@@ -1,138 +1,217 @@
-## Inspiration
+# 🛡️ GigShield
 
-Every monsoon season in Chennai, thousands of delivery partners like **Raj** keep riding through flooded streets — not because they want to, but because missing a shift means missing rent.
+### Dynamic Micro-Insurance for Gig Economy Workers
 
-We kept asking ourselves one question:
-
-> _Why does a 25-year-old delivery partner earning ₹18,000/month have less financial protection than someone earning ₹5 lakh/month?_
-
-Traditional insurance was never designed for the gig economy. Premiums are flat, forms are manual, and claims take days. Meanwhile, Raj faces a new risk **every single day** — heavy rain, heatwaves, political rallies, flooded roads. His income is volatile. His exposure is real. His safety net is essentially zero.
-
-That gap is what inspired **GigShield**: a micro-insurance system that is as dynamic as the work it protects.
-
-## What it does
-
-GigShield delivers **contextual, weekly micro-insurance** for gig delivery workers — automatically priced, automatically triggered, and fraud-resistant by design.
-
-- 🔍 **Auto-identifies** eligible workers using behavioural and environmental signals — no forms, no manual onboarding
-- 📊 **Scores risk in real time** across three dimensions: Environmental, Operational, and Behavioural
-- 💰 **Calculates a personalised weekly premium** using the formula:
-
-$$\text{Weekly Premium} = P_{\text{base}} \times R_{\text{multiplier}} \times B_{\text{modifier}} - D_{\text{trust}}$$
-
-For our persona **Raj** (High risk, Consistent worker, High trust):
-
-$$\text{Premium} = ₹150 \times 1.3 \times 0.9 - 20\% = ₹\textbf{140/week}$$
-
-- ⚡ **Parametric auto-payout** — when OpenWeatherMap detects rain above the threshold in Raj's zone, the system triggers the payout automatically with **zero action required from the worker.** A manual claim option exists for edge cases where the automatic trigger did not fire but the worker was genuinely affected.
-- 🛡️ **Detects fraud** via multi-signal checks: IP geolocation (ipapi.co), GPS consistency, session fingerprinting, WebRTC leak detection, and timezone verification
-- 🔗 **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
-
-## How we built it
-
-### Platform choice — why web over mobile
-
-We chose a **React web app** over a native mobile app for this hackathon build. Delivery partners like Raj already use Swiggy's app daily — adding another app creates friction. A web app runs in any browser, requires no install, and can be embedded directly into existing platforms as a lightweight iframe or webview. It also makes the demo faster to iterate on and easier for judges to access without a device.
-
-### Tech Stack
-
-| Layer | Technology | Purpose |
-|---|---|---|
-| Frontend | **React.js** | Worker dashboard + admin portal |
-| Backend | **FastAPI (Python)** | Risk scoring, pricing, and fraud microservices |
-| Database | **Supabase (PostgreSQL)** | Worker profiles, policies, claims, audit logs |
-| Weather | **OpenWeatherMap API** | Live rain, temperature, AQI for Chennai |
-| IP Geolocation | **ipapi.co** | IP-to-location fraud check |
-| Payments | **Stripe (sandbox)** | Weekly premium auto-deduction |
-| Real-time | **Supabase Realtime** | Live payout notifications to worker dashboard |
-| Guidewire | **InsuranceSuite APIs** | PolicyCenter — policy status updates on payout trigger. ClaimCenter — auto claim creation and closure. BillingCenter — payment instruction to Stripe |
-
-Entire demo stack cost: ₹0 — all services run on free/sandbox tiers.
-
-### Parametric Automation Flow
-
-Primary flow is fully automatic — the worker never needs to file a claim. A manual claim option exists for edge cases where the automatic trigger did not fire but the worker was genuinely affected (e.g. localised flooding not captured by OpenWeatherMap's zone average). Manual claims go through the same Tier 1 + Tier 2 fraud checks before payout is approved.
-```
-1. OpenWeatherMap polls Chennai weather every 15 minutes
-2. Rain intensity crosses threshold (>15mm/hr)
-   → FastAPI trigger service fires automatically
-3. Fraud service runs Tier 1 checks in parallel:
-   - ipapi.co confirms worker IP is in Chennai zone
-   - Supabase session record confirms worker was active today
-   - Browser geolocation matches claimed weather zone
-4. All checks pass
-   → Guidewire PolicyCenter updates policy status to
-     "payout triggered" via REST API
-   → Guidewire ClaimCenter creates and closes the
-     claim record automatically
-   → Guidewire BillingCenter initiates payment
-     instruction to Stripe
-5. Stripe releases payment to worker wallet
-6. Supabase Realtime pushes notification to worker's browser:
-   "Heavy rain detected → ₹140 credited to your account"
-
-Total time from trigger to payout: under 60 seconds
-```
-
-### Risk Scoring Engine (FastAPI)
-
-$$\text{Risk Score} = w_e \cdot S_{\text{env}} + w_o \cdot S_{\text{ops}} + w_b \cdot S_{\text{behav}}$$
-
-Where \\(w_e = 0.4\\), \\(w_o = 0.3\\), \\(w_b = 0.3\\). Maps to Low / Medium / High / Extreme tiers via rule-based thresholds.
-
-### Pricing Engine (FastAPI)
-
-$$P_{\text{final}} = \text{clip}(P_{\text{base}} \times R \times B - D,\ ₹90,\ ₹360)$$
-
-Multiplier values validated via Monte Carlo simulation across 10,000 simulated weather weeks to confirm pool solvency.
-
-### Fraud Detection (FastAPI + Supabase + ipapi.co)
-
-$$T = 1 - \frac{\alpha \cdot f_{\text{flags}} + \beta \cdot f_{\text{gps}} + \gamma \cdot f_{\text{verify}}}{N_{\text{checks}}}$$
-
-- **Tier 1:** ipapi.co IP geolocation, browser geolocation + OpenWeatherMap cross-check, session fingerprinting, WebRTC leak detection, timezone verification
-- **Tier 2:** Location fingerprint analysis, network behaviour analysis (latency drift, jitter, packet timing)
-- **Tier 3 (designed, Phase 3):** Social graph fraud ring detection via DBSCAN clustering + local news API environment cross-check
-
-### Data
-
-Swiggy's driver data is not public — we use a **synthetic dataset of Chennai delivery partner profiles** built to replicate real monsoon seasonality and delivery density.
-
-## Challenges we ran into
-
-**Parametric trigger calibration** — setting the right rain threshold matters enormously. Too low and the pool pays out on drizzle. Too high and workers in genuine floods get nothing. We ran Monte Carlo simulations across 10,000 historical Chennai weather weeks to find thresholds that are both fair to workers and keep the pool solvent.
-
-**Fraud without GPS spoofing protection** — parametric payouts are powerful but exploitable. A worker in Bengaluru could claim a Chennai rainstorm. ipapi.co cross-referencing the IP location against the weather zone, combined with Supabase session history, closes this gap without requiring the worker to do anything extra.
-
-**Supabase Realtime for instant UX** — getting sub-second payout notifications to the worker's browser required careful Supabase channel design so the trigger pipeline didn't create a notification backlog under load.
-
-**Honest scoping** — clearly separating what is wired end-to-end from what is designed-but-not-built matters as much as the technical work itself.
-
-## Accomplishments that we're proud of
-
-- **Zero-action parametric payout flow** — from weather trigger to Stripe credit in under 60 seconds, with no worker input at all
-- **Actuarially validated pricing** — Monte Carlo solvency testing across 10,000 weather weeks, not just a formula on paper
-- **Fraud-resistant by design** — multi-signal Tier 1 checks make spoofing the parametric trigger genuinely hard without adding friction for legitimate workers
-- **Concrete Guidewire integration** — PolicyCenter, ClaimCenter, and BillingCenter mapped to real API workflows at each step of the payout flow
-
-## What we learned
-
-- **Parametric insurance is only as good as its trigger data.** OpenWeatherMap's granularity at the zone level (not just city level) was critical — city-level averages would miss hyperlocal flooding.
-- **Supabase dramatically simplifies the real-time layer.** What would have taken a separate WebSocket server + Redis pub/sub is a few lines of Supabase Realtime configuration.
-- **ipapi.co is surprisingly powerful for fraud prevention.** A free-tier IP geolocation check eliminates a large class of cross-region spoofing attacks with zero added UX friction.
-- **Scoping is a feature.** A working parametric trigger with honest fraud checks beats a 20-service architecture that exists only on paper.
-
-## What's next for GigShield
-
-- Replace rule-based scoring with a trained **XGBoost classifier** on real incident data
-- IRDAI micro-insurance sandbox pilot — 100 real delivery partners in Chennai
-- Live Swiggy / Zomato platform API integration
-- Expand to Tier 2 cities: Coimbatore, Madurai, Pune
-- Full fraud ring detection via social graph clustering + network behaviour ML
-- White-label the engine as a **Guidewire Marketplace component** for other insurers
+![React](https://img.shields.io/badge/Frontend-React.js-blue)
+![Tailwind](https://img.shields.io/badge/UI-TailwindCSS-38B2AC)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green)
+![Supabase](https://img.shields.io/badge/Database-Supabase-orange)
+![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL-blue)
+![OpenWeather](https://img.shields.io/badge/API-OpenWeatherMap-yellow)
+![Stripe](https://img.shields.io/badge/Payments-Stripe-purple)
+![Guidewire](https://img.shields.io/badge/Integration-Guidewire-red)
+![Status](https://img.shields.io/badge/Build-MVP%20Ready-success)
 
 ---
 
-🔗 **GitHub Repository:** https://github.com/your-org/gigshield _(link to be updated before submission deadline)_
+## 🌧️ Inspiration
 
-🎥 **Demo Video:** https://youtu.be/your-demo-link _(link to be updated before submission deadline)_
+Every monsoon in Chennai, thousands of delivery partners like **Raj** ride through flooded streets — not by choice, but because missing work means missing rent.
+
+> Why does someone earning ₹18,000/month have less protection than someone earning ₹5 lakh?
+
+Traditional insurance fails gig workers:
+
+* ❌ Flat premiums
+* ❌ Manual claims
+* ❌ Slow payouts
+* ❌ No real-time risk awareness
+
+👉 **GigShield fixes this.**
+
+---
+
+## 💡 What is GigShield?
+
+GigShield is a **real-time, parametric micro-insurance system** designed for gig workers.
+
+It provides:
+
+* 📊 Dynamic risk-based pricing
+* ⚡ Instant payouts (no claims required)
+* 🛡️ Built-in fraud detection
+
+---
+
+## ⚙️ How It Works
+
+### 🧠 Risk Engine
+
+```
+Risk Score = (0.4 × Environmental) + (0.3 × Operational) + (0.3 × Behavioural)
+```
+
+### 💰 Pricing Model
+
+```
+Weekly Premium = Base × Risk × Behaviour − Trust Discount
+```
+
+👉 Example (Raj):
+
+```
+₹150 × 1.3 × 0.9 − 20% = ₹140/week
+```
+
+---
+
+### ⚡ Parametric Payout System
+
+No claim needed.
+
+1. Weather API detects heavy rain (>15 mm/hr)
+2. System triggers payout automatically
+3. Fraud checks run instantly
+4. Payment is processed
+
+⏱️ **Total time: < 60 seconds**
+
+---
+
+## 🛡️ Fraud Detection System
+
+### Tier 1 (Real-time)
+
+* IP Geolocation (ipapi.co)
+* Browser GPS validation
+* Session tracking (Supabase)
+* Timezone verification
+
+### Tier 2 (Behavioural)
+
+* Movement pattern consistency
+* Network latency analysis
+* Route history validation
+
+### Tier 3 (Designed for Scale)
+
+* Fraud ring detection (clustering)
+* Social pattern analysis
+* Environment cross-verification (news APIs)
+
+---
+
+## 🧱 System Architecture
+
+```
+        ┌──────────────────────┐
+        │   React Frontend     │
+        │ (Worker + Admin UI)  │
+        └──────────┬───────────┘
+                   │
+                   ▼
+        ┌──────────────────────┐
+        │   FastAPI Backend    │
+        │----------------------│
+        │ Risk Engine          │
+        │ Pricing Engine       │
+        │ Fraud Detection      │
+        └──────────┬───────────┘
+                   │
+        ┌──────────▼───────────┐
+        │   Supabase (DB)      │
+        │ Workers / Claims     │
+        └──────────┬───────────┘
+                   │
+        ┌──────────▼───────────┐
+        │ External APIs        │
+        │ Weather / IP / Pay   │
+        └──────────────────────┘
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer               | Technology              | Purpose                                 |
+| ------------------- | ----------------------- | --------------------------------------- |
+| **Frontend**        | React.js + Tailwind CSS | Worker dashboard + Admin panel          |
+| **Backend**         | FastAPI (Python)        | Core logic: risk, pricing, fraud        |
+| **Database**        | Supabase (PostgreSQL)   | Users, policies, claims                 |
+| **Auth & Sessions** | Supabase Auth           | Session tracking & device validation    |
+| **Weather API**     | OpenWeatherMap          | Real-time environmental data            |
+| **IP Validation**   | ipapi.co                | Fraud detection (location verification) |
+| **Browser APIs**    | Geolocation + WebRTC    | GPS + anti-spoofing                     |
+| **Payments**        | Stripe (Sandbox)        | Premium + payout simulation             |
+| **Realtime**        | Supabase Realtime       | Instant notifications                   |
+| **Insurance Layer** | Guidewire APIs          | Policy + claims integration             |
+
+---
+
+## 🎯 MVP (What We Actually Built)
+
+We focused on a **real, working system**:
+
+* ✅ Rule-based risk scoring engine
+* ✅ Dynamic premium calculation
+* ✅ Weather-triggered payout system
+* ✅ Basic fraud detection:
+
+  * IP validation
+  * GPS consistency
+  * Session tracking
+* ✅ Live React dashboard
+* ✅ Simulated Guidewire integration
+
+---
+
+## 🚀 Why GigShield Wins
+
+### ⚡ Instant Claims → No Friction
+
+Traditional insurance: **days**
+GigShield: **seconds**
+
+### 📊 Real-Time Pricing
+
+Premium adapts to:
+
+* Weather
+* Work pattern
+* Behaviour
+
+### 🛡️ Fraud-Resistant by Design
+
+Multi-signal validation — not just GPS
+
+### 💰 Built for Low-Income Workers
+
+Affordable, weekly, contextual insurance
+
+---
+
+## 🔗 Guidewire Integration
+
+GigShield acts as an **embedded insurance layer on top of Guidewire**:
+
+* PolicyCenter → Policy creation
+* BillingCenter → Premium collection
+* ClaimCenter → Automated payouts
+
+👉 Demonstrates how Guidewire can power **next-gen gig economy insurance products**
+
+---
+
+## 🏁 Conclusion
+
+GigShield is not just insurance.
+
+It is:
+
+> A real-time financial safety net for millions of gig workers.
+
+---
+
+### 👥 Team
+
+Built for Guidewire Hackathon 🚀
