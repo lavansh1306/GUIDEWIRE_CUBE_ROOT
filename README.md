@@ -1,160 +1,353 @@
-# GigShield — Dynamic Micro-Insurance for Gig Economy Workers
+# 🛡️ GigShield
+
+> **Dynamic Micro-Insurance for Gig Economy Workers**
+> *Real-time risk scoring · Personalised weekly premiums · Fraud-resistant auto-payouts*
+
+[![Built at Guidewire Hackathon](https://img.shields.io/badge/Guidewire-Hackathon%202025-1F4E79?style=flat-square)](https://www.guidewire.com)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React Native](https://img.shields.io/badge/React%20Native-Expo-61DAFB?style=flat-square&logo=react&logoColor=black)](https://expo.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io)
 
 ---
 
-## Inspiration
+## 📖 Table of Contents
+
+- [Inspiration](#-inspiration)
+- [What It Does](#-what-it-does)
+- [Architecture](#-architecture)
+- [Risk Scoring Engine](#-risk-scoring-engine)
+- [Pricing Engine](#-pricing-engine)
+- [Fraud Detection](#-fraud-detection)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Guidewire Integration](#-guidewire-integration)
+- [What's Next](#-whats-next)
+- [Team](#-team)
+
+---
+
+## 💡 Inspiration
 
 Every monsoon season in Chennai, thousands of delivery partners like **Raj** keep riding through flooded streets — not because they want to, but because missing a shift means missing rent.
 
-We kept asking ourselves one question: _why does a 25-year-old delivery partner earning ₹18,000/month have less financial protection than someone earning ₹5 lakh/month?_
+> *Why does a 25-year-old delivery partner earning ₹18,000/month have less financial protection than someone earning ₹5 lakh/month?*
 
-Traditional insurance was never designed for the gig economy. Premiums are flat, forms are manual, and claims take weeks. Meanwhile, Raj faces a new risk **every single day** — heavy rain, heatwaves, political rallies, flooded roads. His income is volatile. His exposure is real. His safety net is essentially zero.
+Traditional insurance was never designed for the gig economy. Premiums are flat, forms are manual, and claims take days. Meanwhile, Raj faces a new risk every single day — heavy rain, heatwaves, political rallies, flooded roads. His income is volatile. His exposure is real. His safety net is essentially zero.
 
-That gap is what inspired **GigShield**: a micro-insurance system that is as dynamic as the work it protects.
+**GigShield** closes that gap with micro-insurance that is as dynamic as the work it protects.
 
 ---
 
-## What it does
+## ✨ What It Does
 
 GigShield delivers **contextual, weekly micro-insurance** for gig delivery workers — automatically priced, automatically triggered, and fraud-resistant by design.
 
-- 🔍 **Auto-identifies** eligible workers using behavioural and environmental signals — no forms, no manual onboarding
-- 📊 **Scores risk in real time** across three dimensions: Environmental, Operational, and Behavioural
-- 💰 **Calculates a personalised weekly premium** using the formula:
-
-$$
-\text{Weekly Premium} = P_{\text{base}} \times R_{\text{multiplier}} \times B_{\text{modifier}} - D_{\text{trust}}
-$$
-
-Where:
-- \\( P_{\text{base}} \\) = base premium (2–5% of weekly income, default ₹150)
-- \\( R_{\text{multiplier}} \\) = risk tier multiplier ∈ {0.8, 1.0, 1.3, 1.6}
-- \\( B_{\text{modifier}} \\) = behaviour modifier ∈ {0.9, 1.0, 1.2}
-- \\( D_{\text{trust}} \\) = trust discount up to 20%
-
-For our persona **Raj** (High risk, Consistent worker, High trust):
-
-$$
-\text{Premium} = ₹150 \times 1.3 \times 0.9 - 20\% = ₹\mathbf{140/week}
-$$
-
-- ⚡ **Triggers automatic payouts** when verified environmental events (e.g. heavy rain) cross a threshold — in under 60 seconds
-- 🛡️ **Detects fraud** using a multi-signal system: IP deduplication, GPS consistency, session fingerprinting, timezone verification, and cell tower triangulation
-- 🔗 **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
+| Feature | Description |
+|---|---|
+| 🔍 Auto-Identification | Identifies eligible workers from behavioural + environmental signals — no forms |
+| 📊 Real-Time Risk Scoring | Scores each worker across Environmental, Operational, and Behavioural dimensions |
+| 💰 Dynamic Pricing | Calculates a personalised weekly premium every renewal cycle |
+| ⚡ Auto-Payouts | Verified environmental triggers release payouts in under 60 seconds |
+| 🛡️ Fraud Detection | Multi-signal checks: IP, GPS, session fingerprint, timezone, cell tower |
+| 🔗 Guidewire Integration | PolicyCenter + BillingCenter + ClaimCenter via REST API |
 
 ---
 
-## How we built it
+## 🏗️ Architecture
 
-We broke the system into three independently deployable microservices, connected by a shared PostgreSQL database and a Redis cache layer.
-
-### Risk Scoring Engine
-Built in **Python (FastAPI)**. Each risk dimension produces a normalised sub-score:
-
-$$
-\text{Risk Score} = w_e \cdot S_{\text{env}} + w_o \cdot S_{\text{ops}} + w_b \cdot S_{\text{behav}}
-$$
-
-Where \\( w_e, w_o, w_b \\) are configurable weights (default: 0.4, 0.3, 0.3). For the hackathon demo, scoring uses **rule-based thresholds** — the architecture is designed to swap in an XGBoost classifier post-hackathon once labelled incident data is available.
-
-### Pricing Engine
-Also in **Python (FastAPI)**. The formula above is evaluated server-side on every weekly renewal cycle and on any significant risk score change. Premiums are floored at ₹90 and capped at ₹360 to remain within the worker's affordability band:
-
-$$
-P_{\text{final}} = \text{clip}\left(P_{\text{base}} \times R \times B - D,\ ₹90,\ ₹360\right)
-$$
-
-### Fraud Detection Service
-Tier 1 (fully implemented): IP deduplication, GPS delta validation, session fingerprinting via Redis, and timezone cross-check.
-
-Tier 2 (partial): WebRTC local IP leak capture and cell tower signal correlation.
-
-The **Trust Score** \\( T \in [0, 1] \\) is computed as:
-
-$$
-T = 1 - \frac{\text{fraud\_flags} \cdot \alpha + \text{gps\_anomalies} \cdot \beta + \text{failed\_verifications} \cdot \gamma}{N_{\text{total\_checks}}}
-$$
-
-Where \\( \alpha, \beta, \gamma \\) are penalty weights tuned empirically on our synthetic dataset.
-
-### Frontend
-- **React Native (Expo)** — worker-facing mobile dashboard
-- **React.js + Tailwind CSS** — insurer admin portal with risk heatmap and claim queue
-- **Socket.io** — real-time payout push notifications
-
-### Data
-Swiggy's driver data is not publicly available, so we generated a **synthetic dataset of 500 Chennai delivery partner profiles** using Python's Faker library, calibrated to realistic Chennai delivery density, income ranges, and monsoon seasonality.
-
-### Guidewire Integration
-We used Guidewire's **PolicyCenter** and **BillingCenter** REST APIs to:
-1. Auto-create weekly micro-policies on worker enrollment
-2. Route premium deductions through Razorpay → BillingCenter
-3. File and close claims via ClaimCenter on verified payout events
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Presentation Layer                       │
+│   React Native (Worker App)    React.js (Admin Portal)      │
+│              └──────────── Socket.io ────────────┘          │
+└─────────────────────┬───────────────────────────────────────┘
+                      │ REST / WebSocket
+┌─────────────────────▼───────────────────────────────────────┐
+│                    API Gateway (Node.js)                      │
+│              JWT Auth · Rate Limiting · Routing              │
+└────┬──────────────┬──────────────┬──────────────┬───────────┘
+     │              │              │              │
+┌────▼───┐  ┌───────▼──┐  ┌───────▼──┐  ┌───────▼──────┐
+│  Risk  │  │ Pricing  │  │  Fraud   │  │  Policy /    │
+│ Engine │  │ Engine   │  │ Service  │  │  Claims API  │
+│FastAPI │  │ FastAPI  │  │ FastAPI  │  │  (Guidewire) │
+└────┬───┘  └───────┬──┘  └───────┬──┘  └─────────────┘
+     │              │              │
+┌────▼──────────────▼──────────────▼──────────────────────────┐
+│           Data Layer                                         │
+│   PostgreSQL (core)  ·  Redis (cache/sessions)               │
+│   OpenWeatherMap API  ·  NDMA Flood Zones  ·  Razorpay       │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Challenges we ran into
+## 📊 Risk Scoring Engine
 
-**1. Real data doesn't exist — synthetic data has to be honest**
-Swiggy and Zomato don't publish driver-level GPS or income data. Building a convincing synthetic dataset that behaves like real Chennai delivery patterns (monsoon seasonality, peak lunch/dinner density, flood-prone road clusters) took far longer than expected.
+Each worker receives a composite risk score every week, combining three independently weighted sub-scores:
 
-**2. Fraud detection without being invasive**
-The line between _fraud prevention_ and _surveillance_ is thin, especially for low-income workers who are the most vulnerable to being falsely flagged. Every signal we added to the fraud layer had to be justified as proportionate. We deliberately left camera-based physics checks as a future feature — forcing that on a worker mid-claim felt wrong for the MVP.
+$$\text{Risk Score} = w_e \cdot S_{\text{env}} + w_o \cdot S_{\text{ops}} + w_b \cdot S_{\text{behav}}$$
 
-**3. Pricing that is fair AND solvent**
-A premium of ₹140/week sounds small, but calibrating the multipliers so that:
-- The product is affordable for workers
-- The pool remains solvent across a worst-case monsoon event cluster
-- The Trust Discount doesn't create adverse selection
+| Weight | Dimension | Default |
+|---|---|---|
+| $w_e$ | Environmental | 0.4 |
+| $w_o$ | Operational | 0.3 |
+| $w_b$ | Behavioural | 0.3 |
 
-...required building a simple **Monte Carlo simulation** to stress-test the premium pool across 10,000 simulated weather weeks before locking the multiplier values.
+### Environmental Sub-Score $S_{\text{env}}$
+- Rain intensity (mm/hr) — live OpenWeatherMap API
+- Flood probability — NDMA zone overlay
+- Temperature / heatwave index — IMD alerts
+- Air Quality Index — CPCB feed
+- Wind speed — storm threshold
 
-$$
-\text{Pool Solvency} = \sum_{i=1}^{N} P_i - \mathbb{E}\left[\sum_{j \in \text{claims}} C_j\right] \geq 0
-$$
+### Operational Sub-Score $S_{\text{ops}}$
+- Average working hours/day
+- Peak-hour dependency (lunch/dinner window)
+- Delivery density in active zone
+- Order frequency drop during disruptions
+- Route type (flood-prone road classification)
 
-**4. Scoping honestly**
-Early versions of the document made it look like everything from Kubernetes orchestration to TensorFlow Lite on-device ML was fully live. It wasn't. Deciding to clearly label components `[DEMO]`, `[PARTIAL]`, and `[FUTURE]` was a deliberate choice — we think credibility matters more than appearing impressive on paper.
+### Behavioural Sub-Score $S_{\text{behav}}$
+- Movement pattern (continuous vs static)
+- Speed variation (GPS delta anomaly detection)
+- Stop frequency (traffic signal legitimacy signal)
+- Route consistency vs historical fingerprint
 
----
+The composite score maps to a **risk tier**:
 
-## Accomplishments that we're proud of
+| Score Range | Tier | Risk Multiplier |
+|---|---|---|
+| 0.0 – 0.3 | Low | 0.8 |
+| 0.3 – 0.5 | Medium | 1.0 |
+| 0.5 – 0.7 | High | 1.3 |
+| 0.7 – 1.0 | Extreme | 1.6 |
 
-- ✅ **End-to-end working demo**: Worker onboarding → risk score → ₹140 premium → rain trigger → payout in under 60 seconds — all on synthetic data but fully connected
-- ✅ **Guidewire integration**: Live PolicyCenter and BillingCenter API calls within the demo flow — not mocked
-- ✅ **Honest architecture**: Clean separation between what's built and what's designed, so judges can evaluate both the demo and the vision independently
-- ✅ **The pricing formula actually works**: Monte Carlo validation showed the premium pool stays solvent even in a simulated 3-week consecutive flood event for Chennai
-- ✅ **Fraud detection that respects the user**: Tier 1 checks are invisible to legitimate workers — they only surface for anomalous behaviour
-
----
-
-## What we learned
-
-- **Micro-insurance is a systems problem, not just a product problem.** Pricing, fraud, UX, and claims processing are deeply interdependent. Getting the pricing wrong breaks fraud incentives. Getting fraud wrong breaks trust. Getting UX wrong breaks adoption.
-
-- **Guidewire's platform is more flexible than it looks from the outside.** The PolicyCenter and BillingCenter APIs are well-documented and composable — we were able to model a ₹140/week micro-policy using the same primitives designed for ₹1L annual premiums.
-
-- **Synthetic data forces you to understand the real thing deeply.** You can't generate realistic Chennai delivery data without first understanding monsoon flood zones, peak order windows, and road network topology. The data generation process became one of our best research exercises.
-
-- **Scoping is a feature.** The most important engineering decision we made was deciding what _not_ to build for the demo. A credible, working MVP beats an overengineered deck every time.
+> **MVP note:** The demo uses rule-based thresholds. The architecture is designed to hot-swap an XGBoost classifier once labelled incident data is available.
 
 ---
 
-## What's next for GigShield
+## 💰 Pricing Engine
 
-**Short-term (0–3 months)**
-- Replace rule-based risk scoring with a trained **XGBoost classifier** once labelled incident data is available from insurer partnerships
-- Implement Tier 2 fraud checks: cell tower triangulation and WebRTC leak detection
-- Pilot with a small cohort of real delivery partners in Chennai (targeting 100 workers via IRDAI micro-insurance sandbox)
+### Core Formula
 
-**Medium-term (3–12 months)**
-- Integrate with Swiggy / Zomato platform APIs directly for live worker data ingestion
-- Expand to **Tier 2 cities**: Coimbatore, Madurai, Pune — where flood and heat risk is high but insurance penetration is near zero
-- Deploy **Kubernetes (EKS)** orchestration to handle 10,000+ concurrent worker sessions
-- Add fraud ring detection: social graph clustering via NetworkX + DBSCAN
+$$\text{Weekly Premium} = P_{\text{base}} \times R_{\text{multiplier}} \times B_{\text{modifier}} - D_{\text{trust}}$$
 
-**Long-term**
-- Extend the GigShield framework to **urban cab drivers, construction day labourers, and domestic workers** — any workforce that is platform-adjacent, income-volatile, and risk-exposed
-- White-label the risk scoring + pricing engine as a **Guidewire Marketplace component** for other insurers to deploy micro-insurance products on top of their existing InsuranceSuite implementation
+$$P_{\text{final}} = \text{clip}\!\left(P_{\text{base}} \times R \times B - D,\; ₹90,\; ₹360\right)$$
 
-> _GigShield is not just a product — it is a trust infrastructure for India's gig economy, proving that enterprise insurance platforms can power worker-first, real-time, embedded coverage at scale._
+| Variable | Description | Range |
+|---|---|---|
+| $P_{\text{base}}$ | 2–5% of weekly income | ₹90–₹225 (default ₹150) |
+| $R_{\text{multiplier}}$ | Risk tier multiplier | {0.8, 1.0, 1.3, 1.6} |
+| $B_{\text{modifier}}$ | Behaviour consistency | {0.9, 1.0, 1.2} |
+| $D_{\text{trust}}$ | Trust history discount | 0%, 10%, 20% |
+
+### Worked Example — Raj's Premium
+
+| Factor | Value |
+|---|---|
+| Base Premium | ₹150 |
+| Risk: High | × 1.3 |
+| Behaviour: Consistent | × 0.9 |
+| Sub-total | ₹150 × 1.3 × 0.9 = ₹175.50 |
+| Trust Discount: High | − 20% |
+| **Final Weekly Premium** | **₹140** |
+
+### Pool Solvency Validation
+
+Before locking multiplier values, we ran a Monte Carlo simulation across 10,000 simulated weather weeks to verify pool solvency:
+
+$$\text{Pool Solvency} = \sum_{i=1}^{N} P_i - \mathbb{E}\!\left[\sum_{j \in \text{claims}} C_j\right] \geq 0$$
+
+The pool remained solvent across a simulated 3-week consecutive flood event for Chennai at all tested worker pool sizes.
+
+---
+
+## 🛡️ Fraud Detection
+
+Fraud detection is built into the **claim trigger** itself — not bolted on after the fact.
+
+### Tier 1 — Implemented in Demo
+
+| Check | Method |
+|---|---|
+| IP Deduplication | Concurrent claims from same IP blocked via Redis |
+| GPS Consistency | Claim origin vs active delivery zone delta validation |
+| Session Fingerprint | Device ID, login timestamps, session duration stored per worker |
+| Timezone Cross-Check | Phone timezone vs claimed GPS location |
+| SIM Validation | Mobile country code vs reported location |
+
+### Tier 2 — Partial Implementation
+
+| Check | Method |
+|---|---|
+| WebRTC Leak Detection | Local IP captured in-browser; tracked across sessions |
+| Cell Tower Triangulation | Nearby tower IDs + signal strength as GPS-independent proxy |
+
+### Tier 3 — Architected (Post-Hackathon)
+
+Fraud ring detection for coordinated mass-claim attacks:
+
+**Trust Score Formula:**
+
+$$T = 1 - \frac{\alpha \cdot f_{\text{flags}} + \beta \cdot f_{\text{gps}} + \gamma \cdot f_{\text{verify}}}{N_{\text{checks}}}$$
+
+Where $\alpha, \beta, \gamma$ are empirically tuned penalty weights. Trust score drives the premium discount:
+
+| $T$ | Trust Level | Discount |
+|---|---|---|
+| ≥ 0.8 | High | −20% |
+| 0.5 – 0.8 | Medium | −10% |
+| < 0.5 | Low | 0% |
+
+---
+
+## 🔧 Tech Stack
+
+| Layer | Technology | Status |
+|---|---|---|
+| Mobile App | React Native (Expo) | ✅ Demo |
+| Admin Portal | React.js + Tailwind CSS | ✅ Demo |
+| API Gateway | Node.js + Express | ✅ Demo |
+| Risk Engine | Python + FastAPI | ✅ Demo |
+| Pricing Engine | Python + FastAPI | ✅ Demo |
+| Fraud Service | Python + FastAPI | ✅ Tier 1 / 🔄 Tier 2 |
+| Real-Time Alerts | Socket.io | ✅ Demo |
+| Primary Database | PostgreSQL 16 | ✅ Demo |
+| Cache / Sessions | Redis 7 | ✅ Demo |
+| Weather Data | OpenWeatherMap API | ✅ Demo |
+| Payments | Razorpay SDK | ✅ Demo |
+| Guidewire | PolicyCenter + BillingCenter APIs | ✅ Demo |
+| ML Scoring | XGBoost (Scikit-learn) | 🔜 Post-hackathon |
+| Orchestration | Kubernetes (EKS) | 🔜 Post-hackathon |
+| Fraud Ring ML | NetworkX + DBSCAN | 🔜 Post-hackathon |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- Python 3.11+
+- PostgreSQL 16
+- Redis 7
+- Docker (optional)
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/your-org/gigshield.git
+cd gigshield
+```
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env
+# Fill in: OPENWEATHERMAP_API_KEY, RAZORPAY_KEY, GUIDEWIRE_API_URL, DB_URL, REDIS_URL
+```
+
+### 3. Start with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Or run services individually:
+
+```bash
+# Backend API
+cd backend && npm install && npm run dev
+
+# Risk / Pricing / Fraud microservices
+cd services/risk    && pip install -r requirements.txt && uvicorn main:app --port 8001
+cd services/pricing && pip install -r requirements.txt && uvicorn main:app --port 8002
+cd services/fraud   && pip install -r requirements.txt && uvicorn main:app --port 8003
+
+# Mobile app
+cd mobile && npm install && npx expo start
+
+# Admin portal
+cd web && npm install && npm run dev
+```
+
+### 4. Seed synthetic data
+
+```bash
+cd scripts && python generate_synthetic_data.py --workers 500 --city chennai
+```
+
+### 5. Run tests
+
+```bash
+# Backend
+cd backend && npm test
+
+# Python services
+cd services && pytest --cov
+```
+
+---
+
+## 📁 Project Structure
+
+```
+gigshield/
+├── backend/                  # Node.js API gateway
+│   ├── src/
+│   │   ├── routes/           # REST endpoints
+│   │   ├── middleware/        # Auth, rate limiting
+│   │   └── integrations/     # Guidewire, Razorpay
+│   └── package.json
+├── services/
+│   ├── risk/                 # FastAPI risk scoring microservice
+│   ├── pricing/              # FastAPI pricing engine
+│   └── fraud/                # FastAPI fraud detection service
+├── mobile/                   # React Native (Expo) worker app
+├── web/                      # React.js admin portal
+├── scripts/
+│   └── generate_synthetic_data.py
+├── db/
+│   └── schema.sql
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## 🔗 Guidewire Integration
+
+GigShield acts as an **embedded intelligence layer** on top of Guidewire InsuranceSuite — extending it into the micro-insurance segment without requiring platform changes.
+
+| Module | GigShield Usage |
+|---|---|
+| **PolicyCenter** | Auto-creates weekly micro-policies on worker enrollment; manages renewals |
+| **BillingCenter** | Routes ₹140/week premium deductions via Razorpay |
+| **ClaimCenter** | Files auto-approved payouts; escalates fraud-flagged claims to review queue |
+
+---
+
+## 🔮 What's Next
+
+- [ ] XGBoost risk classifier trained on labelled incident data
+- [ ] Cell tower triangulation (Tier 2 fraud) — full implementation
+- [ ] Fraud ring detection via social graph + DBSCAN clustering
+- [ ] IRDAI micro-insurance sandbox pilot — 100 real workers, Chennai
+- [ ] Live Swiggy / Zomato platform API integration
+- [ ] Kubernetes (EKS) for production-scale orchestration
+- [ ] Expand to Tier 2 cities: Coimbatore, Madurai, Pune
+- [ ] White-label risk scoring engine as Guidewire Marketplace component
+
+---
+
+## 👥 Team
+
+Built with ☕ and a lot of weather API calls at **Guidewire Hackathon 2025**.
+
+---
+
+> *GigShield is not just a product — it is a trust infrastructure for India's gig economy, proving that enterprise insurance platforms can power worker-first, real-time, embedded coverage at scale.*
