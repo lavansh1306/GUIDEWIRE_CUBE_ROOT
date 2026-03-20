@@ -2,17 +2,11 @@
 
 ### Dynamic Micro-Insurance for Gig Economy Workers
 
-![React](https://img.shields.io/badge/Frontend-React.js-blue)
-![Tailwind](https://img.shields.io/badge/UI-TailwindCSS-38B2AC)
-![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green)
-![XGBoost](https://img.shields.io/badge/ML-XGBoost-red)
-![Supabase](https://img.shields.io/badge/Database-Supabase-orange)
-![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL-blue)
-![OpenWeather](https://img.shields.io/badge/API-OpenWeatherMap-yellow)
-![Stripe](https://img.shields.io/badge/Payments-Stripe-purple)
-![Guidewire](https://img.shields.io/badge/Integration-Guidewire-red)
-![Status](https://img.shields.io/badge/Build-MVP%20Ready-success)
 
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)!![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Stripe](https://img.shields.io/badge/Stripe-5469d4?style=for-the-badge&logo=stripe&logoColor=ffffff)
 ---
 
 ## 🌧️ Inspiration
