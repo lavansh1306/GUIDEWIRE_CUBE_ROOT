@@ -133,7 +133,7 @@ The computed Risk Score dynamically determines:
 
 ## 🧠 System Insight
 
-GigShield is not just insurance — it is a **real-time risk adaptation system**  
+RAKSHA X is not just insurance — it is a **real-time risk adaptation system**  
 designed for volatile income workers in unpredictable environments.
 
 ---
