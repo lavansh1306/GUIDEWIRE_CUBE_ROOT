@@ -148,41 +148,72 @@ designed for volatile income workers in unpredictable environments.
 ---
 
 ## 🏗️ System Architecture
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                     FRONTEND (React.js)                     │
+│         Worker Dashboard  │  Admin / Insurer Portal         │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ REST API Calls
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     BACKEND (FastAPI)                       │
+│                                                             │
+│   ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│   │   Risk Engine   │  │   Pricing    │  │    Fraud     │  │
+│   │   (XGBoost)     │  │   Engine     │  │  Detection   │  │
+│   │                 │  │ (Regression) │  │  (RF + IF)   │  │
+│   └────────┬────────┘  └──────┬───────┘  └──────┬───────┘  │
+│            └─────────────────┼──────────────────┘          │
+│                              │                              │
+│   ┌───────────────────────────▼─────────────────────────┐  │
+│   │              Parametric Trigger Service              │  │
+│   │   Monitors → Validates → Scores → Initiates Payout  │  │
+│   └───────────────────────────┬─────────────────────────┘  │
+└───────────────────────────────┼─────────────────────────────┘
+                                │
+          ┌─────────────────────┼──────────────────────┐
+          │                     │                      │
+          ▼                     ▼                      ▼
+┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  EXTERNAL APIs  │  │    SUPABASE      │  │    GUIDEWIRE     │
+│                 │  │                  │  │                  │
+│ OpenWeatherMap  │  │ Worker Profiles  │  │ PolicyCenter     │
+│ Rain / AQI /    │  │ Policies         │  │ → status update  │
+│ Temperature     │  │ Claims           │  │                  │
+│                 │  │ Audit Logs       │  │ ClaimCenter      │
+│ ipapi.co        │  │ Session Data     │  │ → auto create    │
+│ IP Geolocation  │  │                  │  │   & close claim  │
+│                 │  │ Realtime         │  │                  │
+│ WebRTC          │  │ → push notif     │  │ BillingCenter    │
+│ Local IP leak   │  │   to browser     │  │ → payment inst.  │
+└─────────────────┘  └──────────────────┘  └────────┬─────────┘
+                                                     │
+                                                     ▼
+                                          ┌──────────────────┐
+                                          │  STRIPE SANDBOX  │
+                                          │                  │
+                                          │ Premium          │
+                                          │ Auto-deduction   │
+                                          │                  │
+                                          │ Instant Payout   │
+                                          │ to Worker Wallet │
+                                          └──────────────────┘
+```
 
-``` id="arch1"
-        ┌──────────────────────────────┐
-        │        Frontend (React)      │
-        │  - User Interface           │
-        │  - Policy Display           │
-        └────────────┬────────────────┘
-                     │ API Calls
-                     ▼
-        ┌──────────────────────────────┐
-        │        Backend (FastAPI)     │
-        │  - Auth & User Handling     │
-        │  - Risk Engine API          │
-        │  - Policy Management        │
-        └───────┬─────────┬──────────┘
-                │         │
-                │         │
-        ┌───────▼───┐   ┌─▼────────────────────┐
-        │ ML Engine │   │ External Data APIs   │
-        │ (XGBoost) │   │ - Weather API        │
-        │ Risk Score│   │ - Location Data      │
-        └───────┬───┘   └─────────┬───────────┘
-                │                 │
-                └──────┬──────────┘
-                       ▼
-        ┌──────────────────────────────┐
-        │      Database (Supabase)     │
-        │  - User Data                │
-        │  - Risk Scores              │
-        │  - Policies                 │
-        └────────────┬────────────────┘
-                     │
-                     ▼
-        ┌──────────────────────────────┐
-        │     Payment Layer (Stripe)   │
-        │  - Premium Collection        │
-        │  - Instant Payouts           │
-        └──────────────────────────────┘
+### ⚡ Flow Summary
+```text
+Worker Session
+      │
+      ▼
+Risk Scored (XGBoost) → Premium Set (Regression) → Policy Issued
+      │
+      ▼
+Weather Event Detected (OpenWeatherMap)
+      │
+      ▼
+Fraud Scored (Random Forest + Isolation Forest + 6-signal checks)
+      │
+      ├── PASS → Guidewire → Stripe → Payout → Worker notified
+      │
+      └── FAIL → Flagged → Tier 2 review → Manual assessment
+```
