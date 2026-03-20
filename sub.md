@@ -37,6 +37,11 @@ is issued.
 
 Risk Score = (0.4 × Environmental) + (0.3 × Operational) + (0.3 × Behavioural)
 
+Weights and tier thresholds are learned by a trained XGBoost classifier
+on synthetic worker profiles, capturing non-linear relationships between
+weather severity, worker behaviour, and income loss risk. The formula
+above reflects the learned weight distribution.
+
 Environmental Risk Score
 a. Rain intensity (mm/hr)
 b. Flood probability (zone-based)
@@ -74,6 +79,12 @@ Low        → 0.8
 Medium     → 1.0
 High       → 1.3
 Extreme    → 1.6
+
+These multipliers are outputs of a regression model trained on
+historical Chennai weather data and synthetic worker profiles —
+not fixed lookup values. A worker in a flood-prone zone during
+northeast monsoon season receives a dynamically higher multiplier
+than the same profile in May.
 
 Behaviour Modifier
 Consistent worker  → 0.9
@@ -118,6 +129,9 @@ Step 3: Fraud checks run in parallel (Tier 1):
          - ipapi.co confirms worker IP is in Chennai zone
          - Supabase session record confirms worker was active today
          - Browser geolocation matches claimed weather zone
+         - Random Forest fraud classifier scores the claim
+         - Isolation Forest flags statistical anomalies in
+           claim pattern
 Step 4: All checks pass
          → Guidewire PolicyCenter updates policy status to
            "payout triggered" via REST API
@@ -170,16 +184,29 @@ e. Suspicious Location Change Flag
    - Any location change in the 7 days before a claim attempt
      is logged and scored as a risk signal
 
+f. Random Forest Fraud Classifier
+   - Trained on synthetic fraud/legitimate claim profiles
+   - Input features: IP zone match, GPS deviation score,
+     session duration, timezone consistency, WebRTC IP match,
+     claim timing vs weather event
+   - Output: fraud probability score 0–1
+   - Claims above threshold → escalated to Tier 2
+
 Tier 2 — Behavioural (runs on flagged claims)
 
-a. Location Fingerprint Analysis
+a. Isolation Forest Anomaly Detection
+   - Unsupervised ML — no labelled fraud examples needed
+   - Flags statistical outliers in claim volume, timing,
+     and location clustering automatically
+
+b. Location Fingerprint Analysis
    - Past delivery locations
    - Order completion zones
    - Movement routes
    - Time patterns
    - Deviation from established fingerprint → elevated fraud score
 
-b. Network Behaviour Analysis
+c. Network Behaviour Analysis
    - FastAPI sends 3–5 rapid requests to the client
    - Checks: latency drift, jitter, packet timing
    - Checks: IP consistency, latency variation, routing changes
@@ -262,6 +289,11 @@ Frontend         React.js                Worker dashboard +
                                          admin portal
 Backend          FastAPI (Python)        Risk scoring, pricing,
                                          fraud microservices
+ML               scikit-learn /          XGBoost risk classifier,
+                 XGBoost                 regression pricing model,
+                                         Random Forest fraud
+                                         scorer, Isolation Forest
+                                         anomaly detection
 Database         Supabase (PostgreSQL)   Worker profiles,
                                          policies, claims,
                                          audit logs
@@ -282,6 +314,8 @@ Guidewire        InsuranceSuite APIs     PolicyCenter — policy
                                          BillingCenter —
                                          payment instruction
                                          to Stripe
+Entire demo stack cost: ₹0
+All services run on free/sandbox tiers.
 
 Entire demo stack cost: ₹0
 All services run on free/sandbox tiers.
