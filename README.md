@@ -24,8 +24,8 @@ For our persona **Raj** (High risk, Consistent worker, High trust):
 
 $$\text{Premium} = ₹150 \times 1.3 \times 0.9 - 20\% = ₹\textbf{140/week}$$
 
-- ⚡ **Parametric auto-payout** — when OpenWeatherMap detects rain above the threshold in Raj's zone, the system triggers the payout automatically with **zero action required from the worker.** No claim form. No phone call. No waiting.
-- 🛡️ **Detects fraud** via multi-signal checks: IP geolocation (ipapi.co), GPS consistency, session fingerprinting and timezone verification
+- ⚡ **Parametric auto-payout** — when OpenWeatherMap detects rain above the threshold in Raj's zone, the system triggers the payout automatically with **zero action required from the worker.** A manual claim option exists for edge cases where the automatic trigger did not fire but the worker was genuinely affected.
+- 🛡️ **Detects fraud** via multi-signal checks: IP geolocation (ipapi.co), GPS consistency, session fingerprinting, WebRTC leak detection, and timezone verification
 - 🔗 **Integrates with Guidewire** PolicyCenter, BillingCenter, and ClaimCenter via REST APIs
 
 ## How we built it
@@ -43,30 +43,36 @@ We chose a **React web app** over a native mobile app for this hackathon build. 
 | Database | **Supabase (PostgreSQL)** | Worker profiles, policies, claims, audit logs |
 | Weather | **OpenWeatherMap API** | Live rain, temperature, AQI for Chennai |
 | IP Geolocation | **ipapi.co** | IP-to-location fraud check |
-| Payments | **Stripe** | Weekly premium auto-deduction |
+| Payments | **Stripe (sandbox)** | Weekly premium auto-deduction |
 | Real-time | **Supabase Realtime** | Live payout notifications to worker dashboard |
-| Guidewire | **InsuranceSuite APIs** | PolicyCenter + BillingCenter integration |
+| Guidewire | **InsuranceSuite APIs** | PolicyCenter — policy status updates on payout trigger. ClaimCenter — auto claim creation and closure. BillingCenter — payment instruction to Stripe |
+
+Entire demo stack cost: ₹0 — all services run on free/sandbox tiers.
 
 ### Parametric Automation Flow
 
-This is the core of GigShield — **the worker never has to file a claim but CAN file a claim**
-
+Primary flow is fully automatic — the worker never needs to file a claim. A manual claim option exists for edge cases where the automatic trigger did not fire but the worker was genuinely affected (e.g. localised flooding not captured by OpenWeatherMap's zone average). Manual claims go through the same Tier 1 + Tier 2 fraud checks before payout is approved.
 ```
 1. OpenWeatherMap polls Chennai weather every 15 minutes
-2. Rain intensity crosses threshold (e.g. > 15mm/hr)
+2. Rain intensity crosses threshold (>15mm/hr)
    → FastAPI trigger service fires automatically
 3. Fraud service runs Tier 1 checks in parallel:
    - ipapi.co confirms worker IP is in Chennai zone
    - Supabase session record confirms worker was active today
-   - GPS last-known location matches claim zone
-4. All checks pass → Supabase updates policy status to "payout triggered"
+   - Browser geolocation matches claimed weather zone
+4. All checks pass
+   → Guidewire PolicyCenter updates policy status to
+     "payout triggered" via REST API
+   → Guidewire ClaimCenter creates and closes the
+     claim record automatically
+   → Guidewire BillingCenter initiates payment
+     instruction to Stripe
 5. Stripe releases payment to worker wallet
 6. Supabase Realtime pushes notification to worker's browser:
    "Heavy rain detected → ₹140 credited to your account"
-Total time from trigger to payout: < 60 seconds
-```
 
-No worker action. No form. No waiting.
+Total time from trigger to payout: under 60 seconds
+```
 
 ### Risk Scoring Engine (FastAPI)
 
@@ -84,12 +90,13 @@ Multiplier values validated via Monte Carlo simulation across 10,000 simulated w
 
 $$T = 1 - \frac{\alpha \cdot f_{\text{flags}} + \beta \cdot f_{\text{gps}} + \gamma \cdot f_{\text{verify}}}{N_{\text{checks}}}$$
 
-- **Tier 1:** ipapi.co IP geolocation, GPS consistency, Supabase session fingerprint, timezone check
-- **Tier 2:** Cell tower triangulation, WebRTC leak detection
-- **Tier 3 (designed):** Social graph fraud ring detection via NetworkX + DBSCAN
+- **Tier 1:** ipapi.co IP geolocation, browser geolocation + OpenWeatherMap cross-check, session fingerprinting, WebRTC leak detection, timezone verification
+- **Tier 2:** Location fingerprint analysis, network behaviour analysis (latency drift, jitter, packet timing)
+- **Tier 3 (designed, Phase 3):** Social graph fraud ring detection via DBSCAN clustering + local news API environment cross-check
 
 ### Data
-Swiggy's driver data is not public — we use a **synthetic dataset of 500 Chennai delivery partner profiles** built to replicate real monsoon seasonality and delivery density.
+
+Swiggy's driver data is not public — we use a **synthetic dataset of Chennai delivery partner profiles** built to replicate real monsoon seasonality and delivery density.
 
 ## Challenges we ran into
 
@@ -105,8 +112,8 @@ Swiggy's driver data is not public — we use a **synthetic dataset of 500 Chenn
 
 - **Zero-action parametric payout flow** — from weather trigger to Stripe credit in under 60 seconds, with no worker input at all
 - **Actuarially validated pricing** — Monte Carlo solvency testing across 10,000 weather weeks, not just a formula on paper
-- **Fraud-resistant by design** — ipapi.co + Supabase session checks make spoofing the parametric trigger genuinely hard without adding friction for legitimate workers
-- **Concrete Guidewire integration** — PolicyCenter and BillingCenter mapped to real API workflows, not vague mentions
+- **Fraud-resistant by design** — multi-signal Tier 1 checks make spoofing the parametric trigger genuinely hard without adding friction for legitimate workers
+- **Concrete Guidewire integration** — PolicyCenter, ClaimCenter, and BillingCenter mapped to real API workflows at each step of the payout flow
 
 ## What we learned
 
@@ -125,3 +132,7 @@ Swiggy's driver data is not public — we use a **synthetic dataset of 500 Chenn
 - White-label the engine as a **Guidewire Marketplace component** for other insurers
 
 ---
+
+🔗 **GitHub Repository:** https://github.com/your-org/gigshield _(link to be updated before submission deadline)_
+
+🎥 **Demo Video:** https://youtu.be/your-demo-link _(link to be updated before submission deadline)_
